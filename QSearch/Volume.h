@@ -40,33 +40,67 @@ private:
 };
 
 
+int AdjustPrivileges(TCHAR* lpszPrivilege)
+{
+	HANDLE token_handle;
+	int ret=0;
+
+	if(OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token_handle))
+	{
+		LUID luid;
+		if(LookupPrivilegeValue(NULL, lpszPrivilege, &luid))
+		{
+			TOKEN_PRIVILEGES tk_priv;
+
+			tk_priv.PrivilegeCount=1;
+			tk_priv.Privileges[0].Attributes=SE_PRIVILEGE_ENABLED;
+			tk_priv.Privileges[0].Luid=luid;
+
+			if(AdjustTokenPrivileges(token_handle,FALSE,&tk_priv,0,NULL,NULL)) 
+			{
+				ret=1;
+			}
+		}
+		CloseHandle(token_handle);
+	}
+	return ret;
+}
+
 class Volume {
 public:
 	Volume(char vol) {
 		this->vol = vol;
 		hVol = NULL;
 		path = "";
+
+		AdjustPrivileges(SE_MANAGE_VOLUME_NAME);
+
+		WCHAR szSystemDrive[MAX_PATH] = {0};
+		::GetSystemDirectory(szSystemDrive, MAX_PATH);
+
+		szSystemDrive[0] = 0; // +		szSystemDrive	0x04a8fb88 "C:\WINDOWS\system32"	wchar_t [260]
 	}
 	~Volume() {
 //		CloseHandle(hVol);
 	}
 
 	bool initVolume() {
-		if ( 
-			// 2.获取驱动盘句柄
-			getHandle() &&
-			// 3.创建USN日志
-			createUSN() &&
-			// 4.获取USN日志信息
-			getUSNInfo() &&
-			// 5.获取 USN Journal 文件的基本信息
-			getUSNJournal() &&
-			// 06. 删除 USN 日志文件 ( 也可以不删除 ) 
-			deleteUSN() ) {
-				return true;
-		} else {
-			return false;
-		}
+		// 2.获取驱动盘句柄
+		if (!getHandle()) return false;
+
+		// 3.创建USN日志
+		if (!createUSN()) return false;
+
+		// 4.获取USN日志信息
+		if (!getUSNInfo()) return false;
+
+		// 5.获取 USN Journal 文件的基本信息
+		if (!getUSNJournal()) return false;
+
+		// 06. 删除 USN 日志文件 ( 也可以不删除 ) 
+		if (!deleteUSN()) return false;
+
+		return false;
 	}
 
 	bool isIgnore( vector<string>* pignorelist ) {
@@ -204,7 +238,7 @@ bool cmpStrStr::infilename(CString &strtmp, CString &filename) {
 
 bool Volume::getHandle() {
 	// 为\\.\C:的形式
-	CString lpFileName( _T("\\\\.\\c:"));
+	CString lpFileName( _T("\\\\.\\c:\\")); // "\\.\C:\"
 	lpFileName.SetAt(4, vol);
 
 
@@ -213,16 +247,17 @@ bool Volume::getHandle() {
 		FILE_SHARE_READ | FILE_SHARE_WRITE, // 必须包含有FILE_SHARE_WRITE
 		NULL,
 		OPEN_EXISTING, // 必须包含OPEN_EXISTING, CREATE_ALWAYS可能会导致错误
-		FILE_ATTRIBUTE_READONLY, // FILE_ATTRIBUTE_NORMAL可能会导致错误
+		FILE_FLAG_BACKUP_SEMANTICS, //FILE_ATTRIBUTE_READONLY, // FILE_ATTRIBUTE_NORMAL可能会导致错误
 		NULL);
-
 
 	if (INVALID_HANDLE_VALUE!=hVol){
 		return true;
 	}else{
+		int code = GetLastError();
+		code = 0;
+				//MessageBox(NULL, _T("USN错误"), _T("错误"), MB_OK);
 		return false;
 //		exit(1);
-		MessageBox(NULL, _T("USN错误"), _T("错误"), MB_OK);
 	}
 }
 
@@ -230,7 +265,8 @@ bool Volume::createUSN() {
 	cujd.MaximumSize = 0; // 0表示使用默认值  
 	cujd.AllocationDelta = 0; // 0表示使用默认值
 
-	DWORD br;
+	DWORD br = 0;
+
 	if (
 		DeviceIoControl( hVol,// handle to volume
 		FSCTL_CREATE_USN_JOURNAL,      // dwIoControlCode
@@ -243,6 +279,8 @@ bool Volume::createUSN() {
 		){	
 			return true;
 	} else {
+		int code = GetLastError();
+		code = 0;
 		return false;
 	}
 }

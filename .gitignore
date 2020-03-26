@@ -1,0 +1,8 @@
+*.ncb
+*.suo
+*.pdb
+*.ilk
+*.user
+*.exe
+/QSearch/Release
+/QSearch/Debug
