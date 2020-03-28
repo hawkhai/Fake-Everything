@@ -209,12 +209,12 @@ BOOL NtfsVolume::getUSNJournal()
 
 			if (fileName.Find("$") == -1 || TRUE)
 			{
-				KFileNode* fileNode = new KFileNode();
-				fileNode->filename = fileName;
+				KFileNode* fileNode = createFileNode(fileName);
 				fileNode->frn = pUsnRecord->FileReferenceNumber;
 				fileNode->pfrn = pUsnRecord->ParentFileReferenceNumber;
 				fileNode->fileAttributes = pUsnRecord->FileAttributes;
-				m_vecFileNode.push_back(fileNode);
+				m_vecFRNIndex.push_back(fileNode);
+				m_vecParentFRNIndex.push_back(fileNode);
 			}
 
 			// 获取下一个记录  
@@ -227,19 +227,29 @@ BOOL NtfsVolume::getUSNJournal()
 		med.StartFileReferenceNumber = *(USN *)szBuffer;  		
 	}
 
-	::qsort(&m_vecFileNode[0], m_vecFileNode.size(), sizeof(m_vecFileNode[0]), vecCompare);
+	::qsort(&m_vecFRNIndex[0], m_vecFRNIndex.size(), sizeof(m_vecFRNIndex[0]), vecCompareFrn);
+	::qsort(&m_vecParentFRNIndex[0], m_vecParentFRNIndex.size(), sizeof(m_vecParentFRNIndex[0]), vecCompareParentFrn);
 
 	delete[] szBuffer;
 	return true;
 }
 
-int NtfsVolume::vecCompare( const void * v1, const void * v2 )
+int NtfsVolume::vecCompareFrn( const void * v1, const void * v2 )
 {
 	KFileNode* p1 = *(KFileNode**)v1;
 	KFileNode* p2 = *(KFileNode**)v2;
 	if (p1->frn == p2->frn)
 		return 0;
 	return p1->frn > p2->frn ? 1 : -1;
+}
+
+int NtfsVolume::vecCompareParentFrn( const void * v1, const void * v2 )
+{
+	KFileNode* p1 = *(KFileNode**)v1;
+	KFileNode* p2 = *(KFileNode**)v2;
+	if (p1->pfrn == p2->pfrn)
+		return 0;
+	return p1->pfrn > p2->pfrn ? 1 : -1;
 }
 
 BOOL NtfsVolume::deleteUSN()
