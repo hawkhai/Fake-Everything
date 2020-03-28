@@ -159,12 +159,15 @@ public:
 		tmp.SetAt(0, m_chVol);
 
 		m_fileNodeDisk = createFileNode(tmp.GetString());
-		m_fileNodeDisk->pfrn = ROOT_FILE_PREF_NUM;
-		m_fileNodeDisk->frn = ROOT_FILE_REF_NUM;
-		m_fileNodeDisk->fileAttributes = FILE_ATTRIBUTE_DIRECTORY;
-		//disk->depth = 0;
-		m_vecFRNIndex.push_back(m_fileNodeDisk);
-		m_vecParentFRNIndex.push_back(m_fileNodeDisk);
+		if (m_fileNodeDisk) // ÄÚ´æ×ã¹»
+		{
+			m_fileNodeDisk->pfrn = ROOT_FILE_PREF_NUM;
+			m_fileNodeDisk->frn = ROOT_FILE_REF_NUM;
+			m_fileNodeDisk->fileAttributes = FILE_ATTRIBUTE_DIRECTORY;
+			//disk->depth = 0;
+			m_vecFRNIndex.push_back(m_fileNodeDisk);
+			m_vecParentFRNIndex.push_back(m_fileNodeDisk);
+		}
 
 		AdjustPrivileges(SE_MANAGE_VOLUME_NAME);
 	}
@@ -218,6 +221,11 @@ public:
 
 	BOOL initVolume()
 	{
+		if (m_fileNodeDisk == NULL)
+		{
+			return false;
+		}
+
 		// 2.»ñÈ¡Çý¶¯ÅÌ¾ä±ú
 		if (!getHandle()) return false;
 

@@ -210,11 +210,14 @@ BOOL NtfsVolume::getUSNJournal()
 			if (fileName.Find("$") == -1 || TRUE)
 			{
 				KFileNode* fileNode = createFileNode(fileName);
-				fileNode->frn = pUsnRecord->FileReferenceNumber;
-				fileNode->pfrn = pUsnRecord->ParentFileReferenceNumber;
-				fileNode->fileAttributes = pUsnRecord->FileAttributes;
-				m_vecFRNIndex.push_back(fileNode);
-				m_vecParentFRNIndex.push_back(fileNode);
+				if (fileNode) // 内存足够
+				{
+					fileNode->frn = pUsnRecord->FileReferenceNumber;
+					fileNode->pfrn = pUsnRecord->ParentFileReferenceNumber;
+					fileNode->fileAttributes = pUsnRecord->FileAttributes;
+					m_vecFRNIndex.push_back(fileNode);
+					m_vecParentFRNIndex.push_back(fileNode);
+				}
 			}
 
 			// 获取下一个记录  
