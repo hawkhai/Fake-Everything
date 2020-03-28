@@ -78,7 +78,7 @@ public:
 public:
 	NOTIFYICONDATA m_ntIcon;
 public:
-	bool OnInitalIcon(void);
+	BOOL OnInitalIcon(void);
 
 
 public:

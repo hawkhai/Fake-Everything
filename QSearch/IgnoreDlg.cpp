@@ -66,7 +66,7 @@ void CIgnoreDlg::OnBnClickedAdd()
 
 
 	BROWSEINFO   bInfo; 
-	ZeroMemory(&bInfo,   sizeof(bInfo)); 
+	ZeroMemory(&bInfo, sizeof(bInfo)); 
 //	bInfo.hwndOwner   =   m_hWnd; 
 	TCHAR   tchPath[255]; 
 	tchPath[0] = '\0';
@@ -109,7 +109,7 @@ bool CIgnoreDlg::WriteConfig(void)
 	int listcount = m_IgnoreList.GetCount();
 	for ( int i=0; i<listcount; ++i ) {
 		m_IgnoreList.GetText(i, Ctmp);
-		string path(CW2A( (LPCTSTR)Ctmp) );
+		string path(CW2A( (LPCTSTR)Ctmp), CP_UTF8 );
 		fout << path << "\n";
 	}	
 
@@ -134,7 +134,7 @@ bool CIgnoreDlg::ReadConfig(void)
 	
 	string tmp;
 	while ( getline(fin, tmp) ) {
-		m_IgnoreList.AddString(CA2W(tmp.c_str()) );
+		m_IgnoreList.AddString(CA2W(tmp.c_str(), CP_UTF8) );
 	}
 	
 	fin.close();

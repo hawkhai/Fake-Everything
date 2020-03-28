@@ -5,7 +5,7 @@
 #include "QSearch.h"
 #include "QSearchDlg.h"
 #include "IgnoreDlg.h"
-#include "Volume.h"
+#include "NtfsVolume.h"
 
 
 #ifdef _DEBUG
@@ -22,13 +22,13 @@ class CAboutDlg : public CDialog
 public:
 	CAboutDlg();
 
-// 对话框数据
+	// 对话框数据
 	enum { IDD = IDD_ABOUTBOX };
 
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
 
-// 实现
+	// 实现
 protected:
 	DECLARE_MESSAGE_MAP()
 };
@@ -49,11 +49,11 @@ END_MESSAGE_MAP()
 // CQSearchDlg 对话框
 
 
-
+extern InitData initdata;
 
 CQSearchDlg::CQSearchDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(CQSearchDlg::IDD, pParent)
-	, m_bMin(false)
+: CDialog(CQSearchDlg::IDD, pParent)
+, m_bMin(false)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -129,8 +129,6 @@ BOOL CQSearchDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	// TODO: 在此添加额外的初始化代码
-	
 	// 初始化系统托盘图标
 	OnInitalIcon();
 
@@ -150,13 +148,10 @@ BOOL CQSearchDlg::OnInitDialog()
 	SetMenu(&menu);
 
 	// 线程
-//	pThread = AfxBeginThread(initdata.initThread, &initdata);
-	initdata.init(NULL);
-	num = initdata.getJ();
+	initdata.init();
+	num = initdata.getNum();
 	m_pro.SetRange(0,num*100);
 	pThread = AfxBeginThread(initThread, (LPVOID)this);
-	
-
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -173,7 +168,7 @@ UINT CQSearchDlg::realThread(LPVOID pParam) {
 
 	char *pvol = initdata.getVol();
 	for ( int i=0; i<num; ++i ) {
-		initdata.initvolumelist((LPVOID)pvol[i]);
+		initdata.initvolumelist(pvol[i]);
 		CString showpro(_T("正在统计"));
 		showpro += pvol[i];
 		showpro += _T("盘文件...");
@@ -260,7 +255,7 @@ void CQSearchDlg::OnLbnDblclkList1()
 	// TODO: 在此添加控件通知处理程序代码
 	CString CSpath;
 	m_FileName.GetText(m_FileName.GetCurSel(), CSpath);
-	string path(CW2A( (LPCTSTR)CSpath) );
+	CStringA path(CW2A( (LPCTSTR)CSpath) , CP_UTF8);
 	ShellExecute(NULL,   NULL, CSpath,   NULL,   NULL,   SW_SHOWNORMAL);
 }
 
@@ -318,25 +313,26 @@ void CQSearchDlg::OnBnClickedFind()
 
 	// CString -> string
 	// string str(CW2A( (LPCTSTR)lpszStringBuf) );
+	CStringA strbuf = CW2A(CString(lpszStringBuf), CP_UTF8);
 
 
 	// TODO: 在此添加 
 	// 遍历c d e盘
-	cmpStrStr cmpstrstr(m_bIsUpLow, m_bUnOrder);
-	vector<string>* pignorepath = initdata.getIgnorePath();
-	
-	for ( list<Volume>::iterator lvolit = initdata.volumelist.begin();
-		lvolit != initdata.volumelist.end(); ++lvolit ) {
+	StringCompare cmpstrstr(m_bIsUpLow, m_bUnOrder);
+	std::vector<CStringA>& pignorepath = initdata.vectorIgnorePath();
+
+	for ( std::list<NtfsVolume*>::iterator lvolit = initdata.listVolume().begin();
+		lvolit != initdata.listVolume().end(); ++lvolit ) {
 			// c d e volumelist
-			lvolit->findFile(lpszStringBuf, cmpstrstr, pignorepath);
+			std::vector<CStringA> rightFile = (*lvolit)->findFile(strbuf, cmpstrstr, &pignorepath);
 
 			// 在ListBox中显示
-			for ( vector<CString>::iterator vstrit = lvolit->rightFile.begin();
-				vstrit != lvolit->rightFile.end(); ++vstrit) {
-					m_FileName.AddString( *vstrit );
+			for (std::vector<CStringA>::iterator vstrit = rightFile.begin();
+				vstrit != rightFile.end(); ++vstrit) {
+					CStringA temp = *vstrit;
+					CString tempk = CA2W(temp, CP_UTF8);
+					m_FileName.AddString( tempk );
 			}
-			lvolit->rightFile.clear();	
-
 	}
 }
 
@@ -354,15 +350,15 @@ void CQSearchDlg::OnIgnore()
 	OnBnClickedFind();
 }
 
-bool CQSearchDlg::OnInitalIcon(void)
+BOOL CQSearchDlg::OnInitalIcon(void)
 {
 	m_bMin = false;
 
 	m_ntIcon.cbSize = sizeof(NOTIFYICONDATA); // 该结构体变量的大小
 	m_ntIcon.hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME); // 图标，通过资源ID得到
 	m_ntIcon.hWnd = this->m_hWnd;	 // 接收托盘图标通知消息的窗口句柄
-	wstring atip = L"QSearch";
-	wcscpy_s(m_ntIcon.szTip,128, atip.c_str());	// 鼠标设上面时显示的提示
+	CString atip = L"QSearch";
+	wcscpy_s(m_ntIcon.szTip,128, atip.GetString());	// 鼠标设上面时显示的提示
 	m_ntIcon.uCallbackMessage = MY_WM_NOTIFYICON; // 应用程序定义的消息ID号
 	m_ntIcon.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;// 图标的属性：设置成员uCallbackMessage、hIcon、szTip有效
 	::Shell_NotifyIcon(NIM_ADD, &m_ntIcon); // 在系统通知区域增加这个图标
@@ -390,10 +386,10 @@ LRESULT CQSearchDlg::OnNotifyIcon(WPARAM wparam, LPARAM lparam)
 
 		//IDR_MENU_POPUP是在ResourceView中创建并编辑的一个菜单
 		popMenu.LoadMenu(IDR_MENU_POPUP); 
-		
+
 		//弹出的菜单实际上是IDR_MENU_POPUP菜单的某项的子菜单，这里是第一项
 		CMenu* pmenu = popMenu.GetSubMenu(0);
-		
+
 		CPoint pos;
 		GetCursorPos(&pos);            //弹出菜单的位置，这里就是鼠标的当前位置
 		//显示该菜单，第一个参数的两个值分别表示在鼠标的右边显示、响应鼠标右击
