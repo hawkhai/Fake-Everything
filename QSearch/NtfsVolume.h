@@ -67,9 +67,22 @@ typedef struct _PageString
 public:
 	_PageString()
 	{
-		szBuffer = new CHAR[MEMO_CHAR_SIZE_64K];
+		szBuffer = NULL;
 		nPos = 0;
-		nEnd = MEMO_CHAR_SIZE_64K;
+		nEnd = 0;
+	}
+
+	BOOL init() 
+	{
+		if (szBuffer == NULL)
+		{
+			szBuffer = new CHAR[MEMO_CHAR_SIZE_64K];
+		}
+		if (szBuffer != NULL)
+		{
+			nEnd = MEMO_CHAR_SIZE_64K;
+		}
+		return szBuffer != NULL;
 	}
 
 	virtual ~_PageString()
@@ -177,6 +190,7 @@ public:
 		if (m_curPageString == NULL)
 		{
 			m_curPageString = new KPageString();
+			m_curPageString->init();
 			m_vecPageString.push_back(m_curPageString);
 		}
 		KFileNode* retv = m_curPageString->locateFileNode(name);
@@ -185,6 +199,7 @@ public:
 			return retv;
 		}
 		m_curPageString = new KPageString();
+		m_curPageString->init();
 		m_vecPageString.push_back(m_curPageString);
 		retv = m_curPageString->locateFileNode(name);
 		return retv;
