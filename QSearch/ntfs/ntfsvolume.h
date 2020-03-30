@@ -29,16 +29,11 @@
 
 typedef struct _FileNode
 {
-	//CStringA filename;
 	DWORDLONG frn;
 	DWORDLONG pfrn;
 	UINT8 fileAttributes; // DWORD
-
-public:
-	//INT8 depth;
-	//_FileNode* pfrnAddress;
 	UINT8 fileNameLength;
-	CHAR fileName[1];
+	CHAR fileName[1]; // 必须最后一个
 
 public:
 	static _FileNode* createFileNodeNull()
@@ -49,12 +44,10 @@ public:
 private:
 	_FileNode()
 	{
-		//pfrnAddress = NULL;
 		frn = pfrn = 0;
 		fileAttributes = 0;
 		fileNameLength = 0;
 		fileName[0] = 0;
-		//depth = -1;
 	}
 } KFileNode;
 
@@ -106,6 +99,7 @@ public:
 		if (nPos + length < nEnd)
 		{
 			KFileNode* retv = (KFileNode*)(&szBuffer[nPos]);
+			ZeroMemory(retv, sizeof(KFileNode));
 			retv->fileNameLength = namelen;
 			strcpy(retv->fileName, name);
 			nPos += length;
@@ -119,20 +113,20 @@ public:
 
 } KPageString;
 
-class StringCompare {
+class StringCompare
+{
 public:
-	StringCompare(BOOL uplow, BOOL inorder) {
+	StringCompare(BOOL uplow)
+	{
 		this->uplow = uplow;
-		this->inorder = inorder;
 	}
 	
-	~StringCompare() {};
+	virtual ~StringCompare() {};
 	BOOL compareStrFilename(CStringA str, CStringA filename);
 	BOOL infilename(CStringA &strtmp, CStringA &filenametmp);
 
 private:
 	BOOL uplow;
-	BOOL inorder;
 };
 
 struct NtfsFile
@@ -153,7 +147,7 @@ struct NtfsFile
 };
 
 typedef std::vector<KFileNode*> KFileNodeVector;
-typedef std::vector<KPageString*> KPageStringVector;
+typedef std::list<KPageString*> KPageStringVector;
 
 class NtfsVolume {
 
@@ -177,32 +171,11 @@ public:
 			m_fileNodeDisk->pfrn = ROOT_FILE_PREF_NUM;
 			m_fileNodeDisk->frn = ROOT_FILE_REF_NUM;
 			m_fileNodeDisk->fileAttributes = FILE_ATTRIBUTE_DIRECTORY;
-			//disk->depth = 0;
 			m_vecFRNIndex.push_back(m_fileNodeDisk);
 			m_vecParentFRNIndex.push_back(m_fileNodeDisk);
 		}
 
 		AdjustPrivileges(SE_MANAGE_VOLUME_NAME);
-	}
-
-	KFileNode* createFileNode(const CHAR* name)
-	{
-		if (m_curPageString == NULL)
-		{
-			m_curPageString = new KPageString();
-			m_curPageString->init();
-			m_vecPageString.push_back(m_curPageString);
-		}
-		KFileNode* retv = m_curPageString->locateFileNode(name);
-		if (retv != NULL)
-		{
-			return retv;
-		}
-		m_curPageString = new KPageString();
-		m_curPageString->init();
-		m_vecPageString.push_back(m_curPageString);
-		retv = m_curPageString->locateFileNode(name);
-		return retv;
 	}
 
 	virtual ~NtfsVolume()
@@ -212,6 +185,7 @@ public:
 			CloseHandle(m_hVol);
 			m_hVol = NULL;
 		}
+		
 		KPageStringVector::iterator it = m_vecPageString.begin();
 		while (it != m_vecPageString.end())
 		{
@@ -219,10 +193,44 @@ public:
 			delete temp;
 			++it;
 		}
+
 		m_vecPageString.clear();
 		m_vecFRNIndex.clear();
 		m_vecParentFRNIndex.clear();
+
+		m_fileNodeDisk = NULL;
 		m_curPageString = NULL;
+	}
+
+	KFileNode* createFileNode(const CHAR* name)
+	{
+		if (m_curPageString == NULL)
+		{
+			m_curPageString = new KPageString();
+			if (!m_curPageString->init())
+			{
+				delete m_curPageString;
+				m_curPageString = NULL;
+				return NULL; // 内存不足了。
+			}
+			m_vecPageString.push_back(m_curPageString);
+		}
+		KFileNode* retv = m_curPageString->locateFileNode(name);
+		if (retv != NULL)
+		{
+			return retv;
+		}
+
+		m_curPageString = new KPageString();
+		if (!m_curPageString->init())
+		{
+			delete m_curPageString;
+			m_curPageString = NULL;
+			return NULL; // 内存不足了。
+		}
+		m_vecPageString.push_back(m_curPageString);
+		retv = m_curPageString->locateFileNode(name);
+		return retv; // 可能为NULL
 	}
 
 	BOOL getHandle();
@@ -230,7 +238,8 @@ public:
 	BOOL getUSNInfo();
 	BOOL getUSNJournal();
 	BOOL deleteUSN();
-	int AdjustPrivileges(TCHAR* lpszPrivilege);
+
+	BOOL AdjustPrivileges(TCHAR* lpszPrivilege);
 	static int vecCompareFrn( const void * v1, const void * v2 );
 	static int vecCompareParentFrn( const void * v1, const void * v2 );
 
@@ -259,14 +268,14 @@ public:
 		return TRUE;
 	}
 
-	BOOL isIgnore( std::vector<CStringA>* pignorelist, CStringA& path)
+	BOOL isIgnore(std::list<CStringA>* pignorelist, CStringA& path)
 	{
 		if (pignorelist == NULL)
 		{
 			return false;
 		}
-		//CStringA tmp = CW2A(path.GetString(), CP_UTF8); // CW2A
-		for ( std::vector<CStringA>::iterator it = pignorelist->begin(); it != pignorelist->end(); ++it )
+		// CStringA tmp = CW2A(path.GetString(), CP_UTF8); // CW2A
+		for ( std::list<CStringA>::iterator it = pignorelist->begin(); it != pignorelist->end(); ++it )
 		{
 			if ( !path.Compare(*it) )
 			{
@@ -276,9 +285,9 @@ public:
 		return false;
 	}
 
-	std::vector<CStringA> findFile( CStringA str, StringCompare& cmpstrstr, std::vector<CStringA>* pignorelist)
+	std::list<CStringA> findFile( CStringA str, StringCompare& cmpstrstr, std::list<CStringA>* pignorelist)
 	{
-		std::vector<CStringA> rightFile;	// 结果
+		std::list<CStringA> rightFile; // 结果
 
 		for (KFileNodeVector::const_iterator cit = m_vecFRNIndex.begin(); cit != m_vecFRNIndex.end(); ++cit)
 		{
@@ -297,7 +306,7 @@ public:
 
 #ifdef TEST
 		{
-			std::vector<CStringA> flist;
+			std::list<CStringA> flist;
 			CStringA path;
 			deepSearch(flist, path, m_fileNodeDisk);
 
@@ -308,9 +317,10 @@ public:
 			first = FALSE;
 			if (fp)
 			{
-				for (int i = 0; i < flist.size(); i++)
+				std::list<CStringA>::iterator it = flist.begin();
+				while (it != flist.end())
 				{
-					fprintf(fp, flist[i].GetString());
+					fprintf(fp, it->GetString());
 					fprintf(fp, "\n");
 				}
 				fclose(fp);
@@ -321,11 +331,16 @@ public:
 		return rightFile;
 	}
 
-	NtfsFile getDiskRoot()
+	BOOL getDiskRoot(NtfsFile& ntfsFile)
 	{
+		if (m_fileNodeDisk == NULL)
+		{
+			return FALSE;
+		}
 		CStringA path;
 		path.Append(m_fileNodeDisk->fileName);
-		return NtfsFile(path, m_fileNodeDisk);
+		ntfsFile = NtfsFile(path, m_fileNodeDisk);
+		return TRUE;
 	}
 
 	BOOL getNtfsFile(CStringA path, NtfsFile& ntfsFile)
@@ -333,9 +348,8 @@ public:
 		return FALSE;
 	}
 
-	std::vector<NtfsFile> getChildFiles(NtfsFile ntfsFile)
+	BOOL getChildFiles(NtfsFile ntfsFile, std::list<NtfsFile>& retv)
 	{
-		std::vector<NtfsFile> retv;
 		size_t leftIndex = 0;
 		size_t rightIndex = 0;
 		if (getChildNodes(ntfsFile.m_fileNode, leftIndex, rightIndex)) // 存在子文件夹
@@ -349,34 +363,9 @@ public:
 				retv.push_back(NtfsFile(temp, current));
 			}
 		}
-		return retv;
+		return TRUE;
 	}
 
-	void deepSearch(std::vector<CStringA>& flist, CStringA path, KFileNode* root)
-	{
-		if (root == NULL)
-		{
-			return;
-		}
-		path.Append(root->fileName);
-		if (root->fileAttributes & FILE_NODE_ARCHIVE)
-		{
-			flist.push_back(path);
-			return;
-		}
-
-		path.Append("\\");
-		size_t leftIndex = 0;
-		size_t rightIndex = 0;
-		if (getChildNodes(root, leftIndex, rightIndex)) // 存在子文件夹
-		{
-			for (int i = leftIndex; i <= rightIndex; i++)
-			{
-				KFileNode* current = m_vecParentFRNIndex[i];
-				deepSearch(flist, path, current);
-			}
-		}
-	}
 
 	BOOL getChildNodes(KFileNode* pnode, size_t& leftIndex, size_t& rightIndex)
 	{
@@ -402,7 +391,7 @@ public:
 
 		KFileNode* child = KFileNode::createFileNodeNull();
 		child->pfrn = pnode->frn;
-		
+
 		KFileNode** result = (KFileNode**)::bsearch(
 			&child,
 			&m_vecParentFRNIndex[indexL],
@@ -417,12 +406,13 @@ public:
 		}
 
 		int index = ((DWORD)result - (DWORD)&m_vecParentFRNIndex[0]) / sizeof(m_vecParentFRNIndex[0]);
+		
 		{ // 递归左边
-			size_t LL = 0;
-			size_t LR = 0;
-			if (getChildNodes(pnode, indexL, index - 1, LL, LR))
+			size_t leftL = 0;
+			size_t leftR = 0;
+			if (getChildNodes(pnode, indexL, index - 1, leftL, leftR))
 			{
-				leftIndex = LL;
+				leftIndex = leftL;
 			}
 			else
 			{
@@ -430,11 +420,11 @@ public:
 			}
 		}
 		{ // 递归右边
-			size_t RL = 0;
-			size_t RR = 0;
-			if (getChildNodes(pnode, index + 1, indexR, RL, RR))
+			size_t rightL = 0;
+			size_t rightR = 0;
+			if (getChildNodes(pnode, index + 1, indexR, rightL, rightR))
 			{
-				rightIndex = RR;
+				rightIndex = rightR;
 			}
 			else
 			{
@@ -444,16 +434,41 @@ public:
 		return TRUE;
 	}
 
+	void deepSearch(std::list<CStringA>& flist, CStringA path, KFileNode* root)
+	{
+		if (root == NULL)
+		{
+			return;
+		}
+		path.Append(root->fileName);
+		if (root->fileAttributes & FILE_NODE_ARCHIVE)
+		{
+			flist.push_back(path);
+			return;
+		}
+
+		path.Append("\\");
+		size_t leftIndex = 0;
+		size_t rightIndex = 0;
+		if (getChildNodes(root, leftIndex, rightIndex)) // 存在子文件夹
+		{
+			for (int i = leftIndex; i <= rightIndex; i++)
+			{
+				KFileNode* current = m_vecParentFRNIndex[i];
+				deepSearch(flist, path, current);
+			}
+		}
+	}
+
 	KFileNode* getParentNode(KFileNode* pnode)
 	{
-		if (pnode == NULL || pnode->pfrn == 0)
+		if (pnode == NULL || pnode->pfrn == ROOT_FILE_PREF_NUM)
 		{
 			return NULL;
 		}
-		//if (pnode->pfrnAddress != NULL)
+		if (pnode->pfrn == ROOT_FILE_REF_NUM)
 		{
-		//	KFileNode* pParent = pnode->pfrnAddress;
-		//	return pParent;
+			return m_fileNodeDisk;
 		}
 
 		KFileNode* parent = KFileNode::createFileNodeNull();
@@ -471,9 +486,6 @@ public:
 		{
 			return NULL;
 		}
-
-		//parent = *result;
-		//pnode->pfrnAddress = pParent;
 		return *result;
 	}
 	
@@ -487,18 +499,12 @@ public:
 		
 		if (parent != NULL)
 		{
-			if ( 0 != parent->pfrn )
+			if ( ROOT_FILE_PREF_NUM != parent->pfrn )
 			{
 				getParentPath(parent, path);
 			}
 
-			//if (parent->depth >= 0)
-			{
-				//pnode->depth = parent->depth + 1;
-			}
-
 			path += parent->fileName;
-			//path.AppendFormat("[%d]", parent->depth);
 			path += "\\";
 		}
 		return path;
@@ -526,6 +532,7 @@ public:
 		m_nCount = 0;
 		ZeroMemory(m_chDiskArray, MAX_DISK_COUNT);
 		m_bInited = FALSE;
+		m_chSystemDrive = 'C';
 	}
 
 	virtual ~InitData()
@@ -552,7 +559,6 @@ public:
 
 	BOOL init()
 	{
-
 		if (m_bInited)
 		{
 			return TRUE;
@@ -567,6 +573,11 @@ public:
 				continue;
 			}
 			CStringA ctemp = temp.c_str();
+			ctemp.Trim();
+			if (ctemp.IsEmpty())
+			{
+				continue;
+			}
 			m_vecIgnorePath.push_back(ctemp);
 		}
 
@@ -585,7 +596,7 @@ public:
 		for (int i = 0; i < MAX_DISK_COUNT; ++i)
 		{
 #ifdef TEST
-			char cvol = i + 'F';
+			char cvol = 'Z' - i;
 			if (isNTFS(cvol))
 			{
 				m_chDiskArray[m_nCount++] = cvol;
@@ -596,7 +607,6 @@ public:
 			if (isNTFS(cvol))
 			{
 				m_chDiskArray[m_nCount++] = cvol;
-				break;
 			}
 #endif
 		}
@@ -613,7 +623,7 @@ public:
 		return m_chDiskArray;
 	}
 
-	std::vector<CStringA>& vectorIgnorePath()
+	std::list<CStringA>& listIgnorePath()
 	{
 		return m_vecIgnorePath;
 	}
@@ -629,5 +639,5 @@ private:
 	char m_chSystemDrive;
 	char m_chDiskArray[MAX_DISK_COUNT];
 	std::list<NtfsVolume*> m_listVolume;
-	std::vector<CStringA> m_vecIgnorePath;
+	std::list<CStringA> m_vecIgnorePath;
 };

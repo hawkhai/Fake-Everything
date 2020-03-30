@@ -2,10 +2,10 @@
 #include "stdafx.h"
 #include "NtfsVolume.h"
 
-int NtfsVolume::AdjustPrivileges(TCHAR* lpszPrivilege)
+BOOL NtfsVolume::AdjustPrivileges(TCHAR* lpszPrivilege)
 {
 	HANDLE tokenHandle = 0;
-	int ret = 0;
+	BOOL ret = FALSE;
 
 	if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &tokenHandle))
 	{
@@ -20,7 +20,7 @@ int NtfsVolume::AdjustPrivileges(TCHAR* lpszPrivilege)
 
 			if (AdjustTokenPrivileges(tokenHandle, FALSE, &tkPriv, 0, NULL, NULL)) 
 			{
-				ret = 1;
+				ret = TRUE;
 			}
 		}
 		CloseHandle(tokenHandle);
@@ -30,25 +30,29 @@ int NtfsVolume::AdjustPrivileges(TCHAR* lpszPrivilege)
 
 BOOL StringCompare::compareStrFilename(CStringA str, CStringA filename)
 {
+	str.TrimLeft(' ');
 	int pos = 0;
 	int end = str.GetLength(); 
 	while ( pos < end )
 	{
-		pos = str.Find( (' ') );
+		pos = str.Find(' ');
 
 		CStringA strtmp;
 		if ( pos == -1 ) { // 无空格
 			strtmp = str;
 			pos = end;
 		} else {
-			strtmp = str.Mid(0, pos-0);
+			strtmp = str.Mid(0, pos);
 		}
 
 		if ( !infilename(strtmp, filename) ) {
 			return false;
 		}
 		str.Delete(0, pos);
-		str.TrimLeft((' '));
+
+		str.TrimLeft(' ');
+		pos = 0;
+		end = str.GetLength(); 
 	}
 
 	return true;
@@ -56,22 +60,17 @@ BOOL StringCompare::compareStrFilename(CStringA str, CStringA filename)
 
 BOOL StringCompare::infilename(CStringA &strtmp, CStringA &filename)
 {
-	CStringA filenametmp(filename);
-	int pos;
-	if ( !uplow ) { // 大小写敏感
-		//filenametmp.MakeLower(); // .MakeLower()
-		pos = filenametmp.Find(strtmp);
+	int pos = 0;
+	if ( !uplow ) { // 大小写不敏感
+		//filename.MakeLower(); // .MakeLower()
+		pos = filename.Find(strtmp);
 	} else {
-		pos = filenametmp.Find(strtmp);
+		pos = filename.Find(strtmp);
 	}
 
 	if ( -1 == pos ) {
 		return false;
 	}
-	if ( !inorder ) { // 无顺序
-		filename.Delete(0, pos+1);
-	}
-
 	return true;
 }
 
@@ -80,7 +79,7 @@ BOOL NtfsVolume::getHandle()
 	CString lpFileName( _T("\\\\.\\C:\\"));
 	lpFileName.SetAt(4, m_chVol);
 
-	m_hVol = CreateFile(lpFileName,
+	m_hVol = ::CreateFile(lpFileName,
 		GENERIC_READ | GENERIC_WRITE, // 可以为0
 		FILE_SHARE_READ | FILE_SHARE_WRITE, // 必须包含有FILE_SHARE_WRITE
 		NULL,
@@ -91,8 +90,7 @@ BOOL NtfsVolume::getHandle()
 	if (INVALID_HANDLE_VALUE != m_hVol) {
 		return true;
 	}else{
-		int code = GetLastError();
-		code = 0;
+		m_hVol = 0;
 		return false;
 	}
 }
@@ -105,7 +103,7 @@ BOOL NtfsVolume::createUSN()
 
 	DWORD br = 0;
 	if (
-		DeviceIoControl( m_hVol,	// handle to volume
+		::DeviceIoControl( m_hVol,	// handle to volume
 		FSCTL_CREATE_USN_JOURNAL,   // dwIoControlCode
 		&cujd,						// input buffer
 		sizeof(cujd),				// size of input buffer
@@ -128,7 +126,7 @@ BOOL NtfsVolume::getUSNInfo()
 	DWORD br = 0;
 
 	if (
-		DeviceIoControl( m_hVol, // handle to volume
+		::DeviceIoControl( m_hVol, // handle to volume
 		FSCTL_QUERY_USN_JOURNAL, // dwIoControlCode
 		NULL,					 // lpInBuffer
 		0,						 // nInBufferSize
@@ -139,6 +137,8 @@ BOOL NtfsVolume::getUSNInfo()
 		) {
 		return true;
 	} else {
+		int code = GetLastError();
+		code = 0;
 		return false;
 	}
 }
@@ -157,9 +157,8 @@ BOOL NtfsVolume::getUSNJournal()
 	}
 
 	DWORD usnDataSize = 0;
-	DWORD index = 0;
 
-	while (0 != DeviceIoControl(m_hVol,  
+	while (0 != ::DeviceIoControl(m_hVol,  
 		FSCTL_ENUM_USN_DATA,  
 		&med,  
 		sizeof(med),  
@@ -175,7 +174,6 @@ BOOL NtfsVolume::getUSNJournal()
 		while (dwRetBytes > 0) {
 	
 			CString _fileName(pUsnRecord->FileName, pUsnRecord->FileNameLength / 2);
-
 			CStringA fileName = CW2A(_fileName, CP_UTF8);
 
 #ifdef TEST
@@ -262,7 +260,7 @@ BOOL NtfsVolume::deleteUSN()
 	dujd.DeleteFlags = USN_DELETE_FLAG_DELETE;  
 	DWORD br = 0;
 
-	if ( DeviceIoControl(m_hVol,  
+	if ( ::DeviceIoControl(m_hVol,  
 		FSCTL_DELETE_USN_JOURNAL,  
 		&dujd,  
 		sizeof(dujd),  
@@ -279,7 +277,8 @@ BOOL NtfsVolume::deleteUSN()
 
 BOOL InitData::isNTFS(char ch)
 {
-	char lpRootPathName[] = ("C:\\");
+	char lpRootPathName[MAX_PATH];
+	strcpy(lpRootPathName, "C:\\");
 	lpRootPathName[0] = ch;
 
 	char lpVolumeNameBuffer[MAX_PATH];

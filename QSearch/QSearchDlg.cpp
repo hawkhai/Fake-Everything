@@ -318,16 +318,16 @@ void CQSearchDlg::OnBnClickedFind()
 
 	// TODO: 在此添加 
 	// 遍历c d e盘
-	StringCompare cmpstrstr(m_bIsUpLow, m_bUnOrder);
-	std::vector<CStringA>& pignorepath = initdata.vectorIgnorePath();
+	StringCompare cmpstrstr(m_bIsUpLow);
+	std::list<CStringA>& pignorepath = initdata.listIgnorePath();
 
 	for ( std::list<NtfsVolume*>::iterator lvolit = initdata.listVolume().begin();
 		lvolit != initdata.listVolume().end(); ++lvolit ) {
 			// c d e volumelist
-			std::vector<CStringA> rightFile = (*lvolit)->findFile(strbuf, cmpstrstr, &pignorepath);
+			std::list<CStringA> rightFile = (*lvolit)->findFile(strbuf, cmpstrstr, &pignorepath);
 
 			// 在ListBox中显示
-			for (std::vector<CStringA>::iterator vstrit = rightFile.begin();
+			for (std::list<CStringA>::iterator vstrit = rightFile.begin();
 				vstrit != rightFile.end(); ++vstrit) {
 					CStringA temp = *vstrit;
 					CString tempk = CA2W(temp, CP_UTF8);

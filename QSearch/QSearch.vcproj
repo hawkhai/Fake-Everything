@@ -127,6 +127,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="E:\kSource\kisengine\src\sysopt\KTrashScan\EnumDisk"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;TEST"
 				MinimalRebuild="false"
 				RuntimeLibrary="0"
@@ -195,6 +196,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\kisengine\src\sysopt\KTrashScan\EnumDisk\NtfsVolume.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\QSearch.cpp"
 				>
 			</File>
@@ -233,11 +238,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\NtfsVolume.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\NtfsVolume.h"
+				RelativePath="..\..\..\kisengine\src\sysopt\KTrashScan\EnumDisk\NtfsVolume.h"
 				>
 			</File>
 			<File
