@@ -148,7 +148,7 @@ BOOL CQSearchDlg::OnInitDialog()
 	SetMenu(&menu);
 
 	// Ïß³Ì
-	initdata.init();
+	initdata.init(TRUE);
 	num = initdata.getNum();
 	m_pro.SetRange(0,num*100);
 	pThread = AfxBeginThread(initThread, (LPVOID)this);

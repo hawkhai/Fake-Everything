@@ -44,6 +44,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\EnumDisk"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -127,7 +128,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="E:\kSource\kisengine\src\sysopt\KTrashScan\EnumDisk"
+				AdditionalIncludeDirectories="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\EnumDisk"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;TEST"
 				MinimalRebuild="false"
 				RuntimeLibrary="0"
@@ -196,7 +197,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\kisengine\src\sysopt\KTrashScan\EnumDisk\NtfsVolume.cpp"
+				RelativePath="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\EnumDisk\NtfsFileSize.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\EnumDisk\NtfsVolume.cpp"
 				>
 			</File>
 			<File
@@ -238,7 +243,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\kisengine\src\sysopt\KTrashScan\EnumDisk\NtfsVolume.h"
+				RelativePath="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\EnumDisk\NtfsFileSize.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\EnumDisk\NtfsVolume.h"
 				>
 			</File>
 			<File
