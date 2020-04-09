@@ -109,7 +109,7 @@ bool CIgnoreDlg::WriteConfig(void)
 	int listcount = m_IgnoreList.GetCount();
 	for ( int i=0; i<listcount; ++i ) {
 		m_IgnoreList.GetText(i, Ctmp);
-		string path(CW2A( (LPCTSTR)Ctmp), CP_UTF8 );
+		string path(CW2A( (LPCTSTR)Ctmp) );
 		fout << path << "\n";
 	}	
 
@@ -134,7 +134,7 @@ bool CIgnoreDlg::ReadConfig(void)
 	
 	string tmp;
 	while ( getline(fin, tmp) ) {
-		m_IgnoreList.AddString(CA2W(tmp.c_str(), CP_UTF8) );
+		m_IgnoreList.AddString(CA2W(tmp.c_str()) );
 	}
 	
 	fin.close();

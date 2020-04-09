@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\EnumDisk"
+				AdditionalIncludeDirectories="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\Bigfile"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -128,8 +128,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\EnumDisk"
-				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;TEST"
+				AdditionalIncludeDirectories="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\Bigfile;."
+				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG"
 				MinimalRebuild="false"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
@@ -197,11 +197,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\EnumDisk\NtfsFileSize.cpp"
+				RelativePath="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\Bigfile\ntfs.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\EnumDisk\NtfsVolume.cpp"
+				RelativePath="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\Bigfile\NtfsFileSize.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\Bigfile\NtfsVolume.cpp"
 				>
 			</File>
 			<File
@@ -243,11 +247,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\EnumDisk\NtfsFileSize.h"
+				RelativePath="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\Bigfile\ntfs.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\EnumDisk\NtfsVolume.h"
+				RelativePath="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\Bigfile\NtfsFileSize.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\kis_2014_defend_dev_1509_sp9.8_dev_fb\src\sysopt\KTrashScan\Bigfile\NtfsVolume.h"
 				>
 			</File>
 			<File
@@ -286,6 +294,22 @@
 			</File>
 			<File
 				RelativePath=".\res\QSearch.rc2"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="framework"
+			>
+			<File
+				RelativePath=".\framework\KRegister2.h"
+				>
+			</File>
+			<File
+				RelativePath=".\framework\KSystemVersion.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\framework\KSystemVersion.h"
 				>
 			</File>
 		</Filter>

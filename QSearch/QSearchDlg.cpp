@@ -255,7 +255,7 @@ void CQSearchDlg::OnLbnDblclkList1()
 	// TODO: 在此添加控件通知处理程序代码
 	CString CSpath;
 	m_FileName.GetText(m_FileName.GetCurSel(), CSpath);
-	CStringA path(CW2A( (LPCTSTR)CSpath) , CP_UTF8);
+	CStringA path(CW2A( (LPCTSTR)CSpath) );
 	ShellExecute(NULL,   NULL, CSpath,   NULL,   NULL,   SW_SHOWNORMAL);
 }
 
@@ -313,7 +313,7 @@ void CQSearchDlg::OnBnClickedFind()
 
 	// CString -> string
 	// string str(CW2A( (LPCTSTR)lpszStringBuf) );
-	CStringA strbuf = CW2A(CString(lpszStringBuf), CP_UTF8);
+	CStringA strbuf = CW2A(CString(lpszStringBuf));
 
 
 	// TODO: 在此添加 
@@ -330,7 +330,7 @@ void CQSearchDlg::OnBnClickedFind()
 			for (std::list<CStringA>::iterator vstrit = rightFile.begin();
 				vstrit != rightFile.end(); ++vstrit) {
 					CStringA temp = *vstrit;
-					CString tempk = CA2W(temp, CP_UTF8);
+					CString tempk = CA2W(temp);
 					m_FileName.AddString( tempk );
 			}
 	}
