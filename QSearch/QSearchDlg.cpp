@@ -48,8 +48,7 @@ END_MESSAGE_MAP()
 
 // CQSearchDlg 对话框
 
-
-extern InitData initdata;
+KNtfsVolume initdatak;
 
 CQSearchDlg::CQSearchDlg(CWnd* pParent /*=NULL*/)
 : CDialog(CQSearchDlg::IDD, pParent)
@@ -148,8 +147,8 @@ BOOL CQSearchDlg::OnInitDialog()
 	SetMenu(&menu);
 
 	// 线程
-	initdata.init(TRUE);
-	num = initdata.getNum();
+	initdatak.init(TRUE);
+	num = initdatak.getNum();
 	m_pro.SetRange(0,num*100);
 	pThread = AfxBeginThread(initThread, (LPVOID)this);
 
@@ -166,9 +165,9 @@ UINT CQSearchDlg::initThread(LPVOID pParam) {
 
 UINT CQSearchDlg::realThread(LPVOID pParam) {
 
-	char *pvol = initdata.getVol();
+	char *pvol = initdatak.getVol();
 	for ( int i=0; i<num; ++i ) {
-		initdata.initvolumelist(pvol[i]);
+		initdatak.initvolumelist(pvol[i]);
 		CString showpro(_T("正在统计"));
 		showpro += pvol[i];
 		showpro += _T("盘文件...");
@@ -319,10 +318,10 @@ void CQSearchDlg::OnBnClickedFind()
 	// TODO: 在此添加 
 	// 遍历c d e盘
 	StringCompare cmpstrstr(m_bIsUpLow);
-	std::list<CStringA>& pignorepath = initdata.listIgnorePath();
+	std::list<CStringA>& pignorepath = initdatak.listIgnorePath();
 
-	for ( std::list<NtfsVolume*>::iterator lvolit = initdata.listVolume().begin();
-		lvolit != initdata.listVolume().end(); ++lvolit ) {
+	for ( std::list<NtfsVolume*>::iterator lvolit = initdatak.listVolume().begin();
+		lvolit != initdatak.listVolume().end(); ++lvolit ) {
 			// c d e volumelist
 			std::list<CStringA> rightFile = (*lvolit)->findFile(strbuf, cmpstrstr, &pignorepath);
 
